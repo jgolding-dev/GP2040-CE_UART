@@ -45,6 +45,16 @@
 // USB Input Class Drivers
 #include "drivermanager.h"
 
+// UART Communication
+#include "hardware/uart.h"
+#include "hardware/gpio.h"
+
+#define UART_ID uart0
+#define BAUD_RATE 115200
+
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
+
 static const uint32_t REBOOT_HOTKEY_ACTIVATION_TIME_MS = 50;
 static const uint32_t REBOOT_HOTKEY_HOLD_TIME_MS = 4000;
 
@@ -338,6 +348,9 @@ void GP2040::run() {
 		// Copy Processed Gamepad for Core1 (race condition otherwise)
 		memcpy(&processedGamepad->state, &gamepad->state, sizeof(GamepadState));
 
+		// Send UART packet
+		send_uart_packet(gamepad);
+
 		// Process Input Driver
 		bool processed = inputDriver->process(gamepad);
 
@@ -350,6 +363,28 @@ void GP2040::run() {
 		// Check if we have a pending save
 		checkSaveRebootState();
 	}
+}
+
+void GP2040::send_uart_packet(Gamepad* gamepad) {
+    InputPacket packet;
+
+    packet.header = 0xAA;
+    packet.buttons_l = gamepad->state.buttons & 0xFF;
+    packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
+
+    // Example: encode joystick mode
+    packet.joystick = gamepad->state.dpad;
+
+    packet.flags = 0;
+
+    packet.checksum =
+        packet.header ^
+        packet.buttons_l ^
+        packet.buttons_h ^
+        packet.joystick ^
+        packet.flags;
+
+    uart_write_blocking(uart0, (uint8_t*)&packet, sizeof(packet));
 }
 
 void GP2040::getReinitGamepad(Gamepad * gamepad) {

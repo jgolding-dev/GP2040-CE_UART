@@ -89,6 +89,9 @@ private:
     void handleSystemReboot(GPEvent* e);
 
     System::BootMode rebootMode = System::BootMode::DEFAULT;
+
+    // UART Communication
+    void send_uart_packet(Gamepad* gamepad);
 };
 
 #endif
