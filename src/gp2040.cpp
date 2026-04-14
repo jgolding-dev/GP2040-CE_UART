@@ -49,17 +49,15 @@
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
 
-#define UART_ID uart0
-#define BAUD_RATE 115200
-
-#define UART_TX_PIN 0
-#define UART_RX_PIN 1
-
 static const uint32_t REBOOT_HOTKEY_ACTIVATION_TIME_MS = 50;
 static const uint32_t REBOOT_HOTKEY_HOLD_TIME_MS = 4000;
 
 const static uint32_t rebootDelayMs = 500;
 static absolute_time_t rebootDelayTimeout = nil_time;
+
+const static uint32_t UART_INTERVAL_MS = 10;
+uint32_t lastUartSendTime = 0;
+
 
 void GP2040::setup() {
 	Storage::getInstance().init();
@@ -214,6 +212,11 @@ void GP2040::setup() {
 	// register system event handlers
 	EventManager::getInstance().registerEventHandler(GP_EVENT_STORAGE_SAVE, GPEVENT_CALLBACK(this->handleStorageSave(event)));
 	EventManager::getInstance().registerEventHandler(GP_EVENT_RESTART, GPEVENT_CALLBACK(this->handleSystemReboot(event)));
+
+	// UART
+	uart_init(UART_ID, BAUD_RATE);
+	gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+	gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 }
 
 /**
@@ -348,8 +351,12 @@ void GP2040::run() {
 		// Copy Processed Gamepad for Core1 (race condition otherwise)
 		memcpy(&processedGamepad->state, &gamepad->state, sizeof(GamepadState));
 
-		// Send UART packet
-		send_uart_packet(gamepad);
+		if (getMillis() - lastUartSendTime >= UART_INTERVAL_MS) {
+			// Send UART packet
+			uart_putc(UART_ID, 0xAA); // test packet
+			lastUartSendTime = getMillis();
+			// send_uart_packet(gamepad);
+		}
 
 		// Process Input Driver
 		bool processed = inputDriver->process(gamepad);
@@ -365,27 +372,27 @@ void GP2040::run() {
 	}
 }
 
-void GP2040::send_uart_packet(Gamepad* gamepad) {
-    InputPacket packet;
+// void GP2040::send_uart_packet(Gamepad* gamepad) {
+//     InputPacket packet;
 
-    packet.header = 0xAA;
-    packet.buttons_l = gamepad->state.buttons & 0xFF;
-    packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
+//     packet.header = 0xAA;
+//     packet.buttons_l = gamepad->state.buttons & 0xFF;
+//     packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
 
-    // Example: encode joystick mode
-    packet.joystick = gamepad->state.dpad;
+//     // Example: encode joystick mode
+//     packet.joystick = gamepad->state.dpad;
 
-    packet.flags = 0;
+//     packet.flags = 0;
 
-    packet.checksum =
-        packet.header ^
-        packet.buttons_l ^
-        packet.buttons_h ^
-        packet.joystick ^
-        packet.flags;
+//     packet.checksum =
+//         packet.header ^
+//         packet.buttons_l ^
+//         packet.buttons_h ^
+//         packet.joystick ^
+//         packet.flags;
 
-    uart_write_blocking(uart0, (uint8_t*)&packet, sizeof(packet));
-}
+//     uart_write_blocking(uart0, (uint8_t*)&packet, sizeof(packet));
+// }
 
 void GP2040::getReinitGamepad(Gamepad * gamepad) {
 	GamepadOptions& gamepadOptions = Storage::getInstance().getGamepadOptions();
