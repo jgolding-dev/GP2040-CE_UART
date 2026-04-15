@@ -10,6 +10,7 @@
 #include "addonmanager.h"
 #include "types.h"
 #include "usbhostmanager.h"
+#include "Arduino.h"
 
 // Inputs for Core0
 #include "addons/analog.h"
@@ -35,6 +36,7 @@
 // Pico includes
 #include "pico/bootrom.h"
 #include "pico/time.h"
+#include "pico/stdlib.h"
 #include "hardware/adc.h"
 
 #include "rndis.h"
@@ -58,8 +60,13 @@ static absolute_time_t rebootDelayTimeout = nil_time;
 const static uint32_t UART_INTERVAL_MS = 10;
 uint32_t lastUartSendTime = 0;
 
+const bool DEBUG = true;
+
 
 void GP2040::setup() {
+	if (DEBUG) {
+		Serial.begin(BAUD_RATE);
+	}
 	Storage::getInstance().init();
 
 	// Reduce CPU if USB host is enabled
@@ -355,6 +362,9 @@ void GP2040::run() {
 			// Send UART packet
 			uart_putc(UART_ID, 0xAA); // test packet
 			lastUartSendTime = getMillis();
+			if (DEBUG) {
+				Serial.println("UART packet sent at " + String(lastUartSendTime) + "ms");
+			}
 			// send_uart_packet(gamepad);
 		}
 
