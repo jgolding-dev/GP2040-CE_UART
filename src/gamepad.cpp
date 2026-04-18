@@ -455,6 +455,15 @@ void Gamepad::clearRumbleState() {
 	auxState.haptics.rightTrigger.intensity = 0;
 }
 
+uint8_t Gamepad::getDpadModeHex() {
+	switch (options.dpadMode) {
+		case DPAD_MODE_DIGITAL: return 0x00;
+		case DPAD_MODE_LEFT_ANALOG: return 0x01;
+		case DPAD_MODE_RIGHT_ANALOG: return 0x02;
+		default: return 0x00;
+	}
+}
+
 /**
  * @brief Take a hotkey action if it hasn't already been taken, modifying state/options appropriately.
  */

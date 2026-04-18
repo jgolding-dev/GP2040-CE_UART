@@ -56,9 +56,9 @@ typedef struct {
     uint8_t header;
     uint8_t buttons_l;
     uint8_t buttons_h;
-    uint8_t dpad;
+    uint8_t joystick;
     uint8_t joystick_mode;
-    uint8_t aux;
+	uint8_t aux;
     uint8_t checksum;
 } __attribute__((packed)) InputPacket;
 
@@ -382,16 +382,16 @@ void GP2040::send_uart_packet(Gamepad* gamepad) {
     packet.buttons_l = gamepad->state.buttons & 0xFF;
     packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
     packet.joystick = gamepad->state.dpad;
-	packet.joystick_mode = gamepad->options.dpadMode;
-    packet.aux = gamepad->state.aux;
+	packet.joystick_mode = gamepad->getDpadModeHex();
+	packet.aux = gamepad->state.aux;
 
     packet.checksum =
         packet.header ^
         packet.buttons_l ^
         packet.buttons_h ^
-        packet.dpad ^
+        packet.joystick ^
         packet.joystick_mode ^
-        packet.aux;
+		packet.aux;
 
     uart_write_blocking(UART_ID, (uint8_t*)&packet, sizeof(packet));
 }

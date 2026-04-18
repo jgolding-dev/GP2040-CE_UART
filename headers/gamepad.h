@@ -38,6 +38,7 @@ public:
 	void process();
 	void read();
 	void save();
+	uint8_t getDpadModeHex();
 
 	void hotkey();
 	void clearState();
@@ -131,6 +132,7 @@ public:
 
 	const GamepadOptions& getOptions() const { return options; }
 	const DpadMode getActiveDpadMode() { return activeDpadMode; }
+
 
 	void setInputMode(InputMode inputMode) { options.inputMode = inputMode; }
 	void setSOCDMode(SOCDMode socdMode) { options.socdMode = socdMode; }
