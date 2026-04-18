@@ -310,9 +310,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME}_${C
 
 pico_set_program_name(GP2040-CE "GP2040-CE")
 pico_set_program_version(GP2040-CE ${GIT_REPO_VERSION})
+pico_enable_stdio_uart(GP2040-CE 1)
 
 target_link_libraries(${PROJECT_NAME}
 pico_stdlib
+pico_stdio_uart
 pico_bootsel_via_double_reset
 tinyusb_host
 tinyusb_pico_pio_usb
