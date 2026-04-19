@@ -53,12 +53,12 @@ const static uint32_t rebootDelayMs = 500;
 static absolute_time_t rebootDelayTimeout = nil_time;
 
 typedef struct {
-    uint8_t header;
+    uint8_t header;		// 0xAA
+	uint8_t header2;	// 0x55
     uint8_t buttons_l;
     uint8_t buttons_h;
     uint8_t joystick;
     uint8_t joystick_mode;
-	uint8_t aux;
     uint8_t checksum;
 } __attribute__((packed)) InputPacket;
 
@@ -220,7 +220,7 @@ void GP2040::setup() {
 	EventManager::getInstance().registerEventHandler(GP_EVENT_RESTART, GPEVENT_CALLBACK(this->handleSystemReboot(event)));
 
 	// UART
-	uart_init(UART_ID, 115200);
+	uart_init(UART_ID, BAUD_RATE);
 	gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
 }
 
@@ -379,19 +379,19 @@ void GP2040::send_uart_packet(Gamepad* gamepad) {
     InputPacket packet;
 
     packet.header = 0xAA;
+	packet.header2 = 0x55;
     packet.buttons_l = gamepad->state.buttons & 0xFF;
     packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
     packet.joystick = gamepad->state.dpad;
 	packet.joystick_mode = gamepad->getDpadModeHex();
-	packet.aux = gamepad->state.aux;
 
     packet.checksum =
         packet.header ^
+		packet.header2 ^
         packet.buttons_l ^
         packet.buttons_h ^
         packet.joystick ^
-        packet.joystick_mode ^
-		packet.aux;
+        packet.joystick_mode;
 
     uart_write_blocking(UART_ID, (uint8_t*)&packet, sizeof(packet));
 }
