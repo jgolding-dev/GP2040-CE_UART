@@ -53,13 +53,14 @@ const static uint32_t rebootDelayMs = 500;
 static absolute_time_t rebootDelayTimeout = nil_time;
 
 typedef struct {
-    uint8_t header;		// 0xAA
-	uint8_t header2;	// 0x55
+    uint8_t header;			// 0xAA
+	uint8_t header2;		// 0x55
+	uint8_t length;			// length of payload, fixed = 4 (not including header, length, and checksum)
     uint8_t buttons_l;
     uint8_t buttons_h;
     uint8_t joystick;
     uint8_t joystick_mode;
-    uint8_t checksum;
+    uint8_t checksum;		// CRC8 of payload (buttons_l, buttons_h, joystick, joystick_mode)
 } __attribute__((packed)) InputPacket;
 
 static const uint32_t UART_INTERVAL_MS = 10;
@@ -380,20 +381,29 @@ void GP2040::send_uart_packet(Gamepad* gamepad) {
 
     packet.header = 0xAA;
 	packet.header2 = 0x55;
+	packet.length = 4; // fixed payload length (buttons_l, buttons_h, joystick, joystick_mode)
+
     packet.buttons_l = gamepad->state.buttons & 0xFF;
     packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
     packet.joystick = gamepad->state.dpad;
 	packet.joystick_mode = gamepad->getDpadModeHex();
 
-    packet.checksum =
-        packet.header ^
-		packet.header2 ^
-        packet.buttons_l ^
-        packet.buttons_h ^
-        packet.joystick ^
-        packet.joystick_mode;
+    packet.checksum = crc8((uint8_t*)&packet, 2 + 1 + packet.length); // calculate CRC8 of header, header2, length, and payload
 
     uart_write_blocking(UART_ID, (uint8_t*)&packet, sizeof(packet));
+}
+
+uint8_t GP2040::crc8(const uint8_t* data, size_t len) {
+	uint8_t crc = 0x00; // Initial value
+
+	for (size_t i = 0; i < len; i++) {
+		crc ^= data[i]; // XOR byte into CRC
+		for (uint8_t j = 0; j < 8; j++) {
+			crc = (crc & 0x80) ? (crc << 1) ^ 0x07 : (crc << 1); // Polynomial 0x07
+		}
+	}
+
+	return crc;
 }
 
 void GP2040::getReinitGamepad(Gamepad * gamepad) {
