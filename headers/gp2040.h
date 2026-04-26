@@ -98,6 +98,7 @@ private:
 
     // UART Communication
     void send_uart_packet(Gamepad* gamepad);
+    uint8_t crc8(const uint8_t* data, size_t len);
 };
 
 #endif

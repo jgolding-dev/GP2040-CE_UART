@@ -386,7 +386,7 @@ void GP2040::send_uart_packet(Gamepad* gamepad) {
     packet.buttons_l = gamepad->state.buttons & 0xFF;
     packet.buttons_h = (gamepad->state.buttons >> 8) & 0xFF;
     packet.joystick = gamepad->state.dpad;
-	packet.joystick_mode = gamepad->getDpadModeHex();
+	packet.joystick_mode = gamepad->getDpadModeByte();
 
     packet.checksum = crc8((uint8_t*)&packet, 2 + 1 + packet.length); // calculate CRC8 of header, header2, length, and payload
 

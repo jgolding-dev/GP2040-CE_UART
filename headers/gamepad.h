@@ -38,7 +38,7 @@ public:
 	void process();
 	void read();
 	void save();
-	uint8_t getDpadModeHex();
+	uint8_t getDpadModeByte();
 
 	void hotkey();
 	void clearState();
